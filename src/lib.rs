@@ -425,7 +425,7 @@ impl SerialPortBuilder {
 ///
 /// This trait is all that's necessary to implement a new serial port driver
 /// for a new platform.
-pub trait SerialPort: Send + io::Read + io::Write {
+pub trait SerialPort: Send + Sync + io::Read + io::Write {
     // Port settings getters
 
     /// Returns the name of this port if it exists.

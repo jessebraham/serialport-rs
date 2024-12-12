@@ -32,7 +32,17 @@ pub struct COMPort {
     port_name: Option<String>,
 }
 
+// The Windows [`HANDLE`] type is considered safe according to the standard library.
+// See explanation on [`OwnedHandle`] in stdlib for more information.
+//
+// [`HANDLE`]: std::os::windows::raw::HANDLE
+// [`OwnedHandle`]: std::os::windows::io::OwnedHandle
+//
+// In the future we might want to consider using `OwnedHandle` instead of `HANDLE` directly.
+// At the time of writing, such work is blocked by this crate's MSRV (1.59.0) policy as
+// `OwnedHandle` was stabilized in 1.63.0.
 unsafe impl Send for COMPort {}
+unsafe impl Sync for COMPort {}
 
 impl COMPort {
     /// Opens a COM port as a serial device.
