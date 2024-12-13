@@ -32,11 +32,9 @@ pub struct COMPort {
     port_name: Option<String>,
 }
 
-// The Windows [`HANDLE`] type is considered safe according to the standard library.
-// See explanation on [`OwnedHandle`] in stdlib for more information.
-//
-// [`HANDLE`]: std::os::windows::raw::HANDLE
-// [`OwnedHandle`]: std::os::windows::io::OwnedHandle
+// The Windows `HANDLE` type is considered safe according to the standard library.
+// See the explanation below in stdlib for more information:
+// https://github.com/rust-lang/rust/blob/f4f0fafd0c7849e162eddbc69fa5fe82dbec28c7/library/std/src/os/windows/io/handle.rs#L111-L115
 //
 // In the future we might want to consider using `OwnedHandle` instead of `HANDLE` directly.
 // At the time of writing, such work is blocked by this crate's MSRV (1.59.0) policy as
