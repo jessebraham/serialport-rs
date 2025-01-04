@@ -30,6 +30,9 @@ pub struct COMPort {
     handle: HANDLE,
     timeout: Duration,
     port_name: Option<String>,
+    // keeps track of DTR state so we can re-send DTR on RTS change to work
+    // around USB Serial driver misbehaviour
+    dtr: bool,
 }
 
 unsafe impl Send for COMPort {}
@@ -122,6 +125,7 @@ impl COMPort {
                     handle: cloned_handle,
                     port_name: self.port_name.clone(),
                     timeout: self.timeout,
+                    dtr: self.dtr,
                 })
             } else {
                 Err(super::error::last_os_error())
@@ -152,6 +156,7 @@ impl COMPort {
             handle: handle as HANDLE,
             timeout: Duration::from_millis(100),
             port_name: None,
+            dtr: false,
         }
     }
 
@@ -280,13 +285,17 @@ impl SerialPort for COMPort {
 
     fn write_request_to_send(&mut self, level: bool) -> Result<()> {
         if level {
-            self.escape_comm_function(SETRTS)
+            self.escape_comm_function(SETRTS)?;
         } else {
-            self.escape_comm_function(CLRRTS)
+            self.escape_comm_function(CLRRTS)?;
         }
+
+        self.write_data_terminal_ready(self.dtr)
     }
 
     fn write_data_terminal_ready(&mut self, level: bool) -> Result<()> {
+        self.dtr = level;
+
         if level {
             self.escape_comm_function(SETDTR)
         } else {
