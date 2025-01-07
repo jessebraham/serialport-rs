@@ -334,6 +334,8 @@ impl SerialPort for COMPort {
         match dcb.Parity {
             ODDPARITY => Ok(Parity::Odd),
             EVENPARITY => Ok(Parity::Even),
+            MARKPARITY => Ok(Parity::Mark),
+            SPACEPARITY => Ok(Parity::Space),
             NOPARITY => Ok(Parity::None),
             _ => Err(Error::new(
                 ErrorKind::Unknown,

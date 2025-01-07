@@ -171,7 +171,7 @@ impl TTYPort {
 
         // Configure the low-level port settings
         let mut termios = termios::get_termios(fd.0)?;
-        termios::set_parity(&mut termios, builder.parity);
+        termios::set_parity(&mut termios, builder.parity)?;
         termios::set_flow_control(&mut termios, builder.flow_control);
         termios::set_data_bits(&mut termios, builder.data_bits);
         termios::set_stop_bits(&mut termios, builder.stop_bits);
@@ -653,7 +653,7 @@ impl SerialPort for TTYPort {
 
     fn set_parity(&mut self, parity: Parity) -> Result<()> {
         let mut termios = termios::get_termios(self.fd)?;
-        termios::set_parity(&mut termios, parity);
+        termios::set_parity(&mut termios, parity)?;
         #[cfg(any(target_os = "ios", target_os = "macos"))]
         return termios::set_termios(self.fd, &termios, self.baud_rate);
         #[cfg(not(any(target_os = "ios", target_os = "macos")))]

@@ -208,6 +208,16 @@ pub enum Parity {
 
     /// Parity bit sets even number of 1 bits.
     Even,
+
+    /// Parity bit is set to 1.
+    ///
+    /// Only supported on Windows and Linux.
+    Mark,
+
+    /// Parity bit is set to 0.
+    ///
+    /// Only supported on Windows and Linux.
+    Space,
 }
 
 impl fmt::Display for Parity {
@@ -216,6 +226,8 @@ impl fmt::Display for Parity {
             Parity::None => write!(f, "None"),
             Parity::Odd => write!(f, "Odd"),
             Parity::Even => write!(f, "Even"),
+            Parity::Mark => write!(f, "Mark"),
+            Parity::Space => write!(f, "Space"),
         }
     }
 }

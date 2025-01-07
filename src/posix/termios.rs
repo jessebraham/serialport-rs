@@ -145,25 +145,71 @@ pub(crate) fn set_termios(fd: RawFd, termios: &Termios) -> Result<()> {
     crate::posix::ioctl::tcsets2(fd, termios)
 }
 
-pub(crate) fn set_parity(termios: &mut Termios, parity: Parity) {
+// The Result return will seem pointless on platforms that support all parity variants, but we need
+// it for the others.
+#[allow(clippy::unnecessary_wraps)]
+pub(crate) fn set_parity(termios: &mut Termios, parity: Parity) -> Result<()> {
     match parity {
         Parity::None => {
             termios.c_cflag &= !(libc::PARENB | libc::PARODD);
             termios.c_iflag &= !libc::INPCK;
             termios.c_iflag |= libc::IGNPAR;
+            #[cfg(any(target_os = "linux", target_os = "android"))]
+            {
+                termios.c_iflag &= !libc::CMSPAR;
+            }
         }
         Parity::Odd => {
             termios.c_cflag |= libc::PARENB | libc::PARODD;
             termios.c_iflag |= libc::INPCK;
             termios.c_iflag &= !libc::IGNPAR;
+            #[cfg(any(target_os = "linux", target_os = "android"))]
+            {
+                termios.c_iflag &= !libc::CMSPAR;
+            }
         }
         Parity::Even => {
             termios.c_cflag &= !libc::PARODD;
             termios.c_cflag |= libc::PARENB;
             termios.c_iflag |= libc::INPCK;
             termios.c_iflag &= !libc::IGNPAR;
+            #[cfg(any(target_os = "linux", target_os = "android"))]
+            {
+                termios.c_iflag &= !libc::CMSPAR;
+            }
+        }
+        #[cfg(any(target_os = "linux", target_os = "android"))]
+        Parity::Mark => {
+            termios.c_cflag |= libc::PARODD;
+            termios.c_cflag |= libc::PARENB;
+            termios.c_iflag |= libc::INPCK;
+            termios.c_iflag &= !libc::IGNPAR;
+            termios.c_iflag |= libc::CMSPAR;
+        }
+        #[cfg(any(target_os = "linux", target_os = "android"))]
+        Parity::Space => {
+            termios.c_cflag &= !libc::PARODD;
+            termios.c_cflag |= libc::PARENB;
+            termios.c_iflag |= libc::INPCK;
+            termios.c_iflag &= !libc::IGNPAR;
+            termios.c_iflag |= libc::CMSPAR;
+        }
+        #[cfg(not(any(target_os = "linux", target_os = "android")))]
+        Parity::Mark => {
+            return Err(crate::Error::new(
+                crate::ErrorKind::InvalidInput,
+                "Mark parity not supported on this platform",
+            ));
+        }
+        #[cfg(not(any(target_os = "linux", target_os = "android")))]
+        Parity::Space => {
+            return Err(crate::Error::new(
+                crate::ErrorKind::InvalidInput,
+                "Space parity not supported on this platform",
+            ));
         }
     };
+    Ok(())
 }
 
 pub(crate) fn set_flow_control(termios: &mut Termios, flow_control: FlowControl) {
