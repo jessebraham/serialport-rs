@@ -134,7 +134,9 @@ impl TTYPort {
         nix::errno::Errno::result(unsafe { tcgetattr(fd.0, termios.as_mut_ptr()) })?;
         let mut termios = unsafe { termios.assume_init() };
 
-        // setup TTY for binary serial port access
+        // Setup TTY for binary serial port access
+        // Enable non-canonical mode
+        termios.c_lflag &= !libc::ICANON;
         // Enable reading from the port and ignore all modem control lines
         termios.c_cflag |= libc::CREAD | libc::CLOCAL;
         // Enable raw mode which disables any implicit processing of the input or output data streams
@@ -175,6 +177,8 @@ impl TTYPort {
         termios::set_flow_control(&mut termios, builder.flow_control);
         termios::set_data_bits(&mut termios, builder.data_bits);
         termios::set_stop_bits(&mut termios, builder.stop_bits);
+        // Set termios read to non-blocking, as we handle blocking ourselves (with unix::poll)
+        termios::set_timeout(&mut termios, Duration::from_millis(0));
         #[cfg(not(any(target_os = "ios", target_os = "macos")))]
         termios::set_baud_rate(&mut termios, builder.baud_rate)?;
         #[cfg(any(target_os = "ios", target_os = "macos"))]

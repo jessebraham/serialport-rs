@@ -5,6 +5,7 @@ use crate::{DataBits, FlowControl, Parity, Result, StopBits};
 use nix::libc;
 
 use std::os::unix::prelude::*;
+use std::time::Duration;
 
 cfg_if! {
     if #[cfg(any(
@@ -181,6 +182,12 @@ pub(crate) fn set_flow_control(termios: &mut Termios, flow_control: FlowControl)
             termios.c_cflag |= libc::CRTSCTS;
         }
     };
+}
+
+pub(crate) fn set_timeout(termios: &mut Termios, timeout: Duration) {
+    let timeout = u128::min(timeout.as_millis() / 100, u8::MAX as u128) as u8;
+    termios.c_cc[libc::VMIN as usize] = 0;
+    termios.c_cc[libc::VTIME as usize] = timeout;
 }
 
 pub(crate) fn set_data_bits(termios: &mut Termios, data_bits: DataBits) {
