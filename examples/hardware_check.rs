@@ -227,6 +227,7 @@ fn test_single_port(port: &mut dyn serialport::SerialPort, loopback: bool) {
     // Test setting stop bits
     println!("Testing stop bits...");
     stop_bits_check!(port, StopBits::Two);
+    stop_bits_check!(port, StopBits::OnePointFive);
     stop_bits_check!(port, StopBits::One);
 
     // Test bytes to read and write

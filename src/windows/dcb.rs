@@ -89,6 +89,7 @@ pub(crate) fn set_parity(dcb: &mut DCB, parity: Parity) {
 pub(crate) fn set_stop_bits(dcb: &mut DCB, stop_bits: StopBits) {
     dcb.StopBits = match stop_bits {
         StopBits::One => ONESTOPBIT,
+        StopBits::OnePointFive => ONE5STOPBITS,
         StopBits::Two => TWOSTOPBITS,
     };
 }

@@ -198,6 +198,7 @@ pub(crate) fn set_data_bits(termios: &mut Termios, data_bits: DataBits) {
 pub(crate) fn set_stop_bits(termios: &mut Termios, stop_bits: StopBits) {
     match stop_bits {
         StopBits::One => termios.c_cflag &= !libc::CSTOPB,
+        StopBits::OnePointFive => termios.c_cflag &= !libc::CSTOPB,
         StopBits::Two => termios.c_cflag |= libc::CSTOPB,
     };
 }
