@@ -97,15 +97,21 @@ pub(crate) fn get_termios(fd: RawFd) -> Result<Termios> {
 }
 
 #[cfg(any(target_os = "ios", target_os = "macos",))]
-pub(crate) fn set_termios(fd: RawFd, termios: &libc::termios, baud_rate: u32) -> Result<()> {
+pub(crate) fn set_termios(fd: RawFd, termios: &mut libc::termios, baud_rate: u32) -> Result<()> {
+
+    let mut ispeed_res = 0;
+    let mut ospeed_res = 0;
+    if baud_rate > 0 {
+        unsafe {
+            ispeed_res = libc::cfsetispeed(&mut *termios, baud_rate as libc::speed_t);
+            ospeed_res = libc::cfsetospeed(&mut *termios, baud_rate as libc::speed_t);
+        }
+    }
+    nix::errno::Errno::result(ispeed_res)?;
+    nix::errno::Errno::result(ospeed_res)?;
+
     let res = unsafe { libc::tcsetattr(fd, libc::TCSANOW, termios) };
     nix::errno::Errno::result(res)?;
-
-    // Note: attempting to set the baud rate on a pseudo terminal via this ioctl call will fail
-    // with the `ENOTTY` error.
-    if baud_rate > 0 {
-        crate::posix::ioctl::iossiospeed(fd, &(baud_rate as libc::speed_t))?;
-    }
 
     Ok(())
 }
