@@ -396,6 +396,10 @@ impl SerialPortBuilder {
     }
 
     /// Set data terminal ready (DTR) to the given state when opening the device
+    ///
+    /// Note: On Linux, DTR is automatically set on open. Even if you set `dtr_on_open` to false,
+    /// DTR will be asserted for a short moment when opening the port. This can't be prevented
+    /// without kernel modifications.
     #[must_use]
     pub fn dtr_on_open(mut self, state: bool) -> Self {
         self.dtr_on_open = Some(state);
