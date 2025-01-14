@@ -35,6 +35,29 @@ features = [
     "minwindef", "ntdef", "setupapi", "winbase", "winerror", "winnt",
 ]
 
+[target."cfg(windows)".dependencies.windows-sys]
+version = "0.52.0"
+features = [
+    "Win32_Storage", 
+    "Win32_Storage_FileSystem", 
+    "Win32_Security",
+    "Win32_Devices", 
+    "Win32_Devices_Communication", 
+    "Win32_Devices_DeviceAndDriverInstallation",
+    "Win32_Devices_Properties",
+    "Win32_Foundation",
+    "Win32_Media",
+    "Win32_Media_KernelStreaming",
+    "Win32_System_Diagnostics",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_IO",
+    "Win32_System_Registry",
+    "Win32_System_SystemServices",
+    "Win32_System_Threading",
+    "Win32_System_WindowsProgramming", 
+    "Win32_Globalization",
+]
+
 [dependencies]
 cfg-if = "1.0.0"
 scopeguard = "1.1"

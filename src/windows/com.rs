@@ -3,21 +3,37 @@ use std::os::windows::prelude::*;
 use std::time::Duration;
 use std::{io, ptr};
 
-use winapi::shared::minwindef::*;
-use winapi::um::commapi::*;
-use winapi::um::fileapi::*;
-use winapi::um::handleapi::*;
-use winapi::um::processthreadsapi::GetCurrentProcess;
-use winapi::um::winbase::*;
-use winapi::um::winnt::{
-    DUPLICATE_SAME_ACCESS, FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE, MAXDWORD,
-};
+// use winapi::shared::minwindef::*;
+// use winapi::um::commapi::*;
+// use winapi::um::fileapi::*;
+// use winapi::um::handleapi::*;
+// use winapi::um::processthreadsapi::GetCurrentProcess;
+// use winapi::um::winbase::*;
+// use winapi::um::winnt::{
+//     DUPLICATE_SAME_ACCESS, FILE_ATTRIBUTE_NORMAL, GENERIC_READ, GENERIC_WRITE, HANDLE, MAXDWORD,
+// };
+
+use windows_sys::Win32::Storage::FileSystem::*;
+use windows_sys::Win32::System::Threading::GetCurrentProcess;
+use windows_sys::Win32::System::SystemServices::MAXDWORD;
+use windows_sys::Win32::Foundation::{DUPLICATE_SAME_ACCESS, TRUE, GENERIC_READ, GENERIC_WRITE, HANDLE, 
+    INVALID_HANDLE_VALUE, DuplicateHandle, CloseHandle};
+use windows_sys::Win32::Devices::Communication::{ClearCommError, COMMTIMEOUTS, 
+    SETRTS, CLRRTS, SETDTR, CLRDTR, 
+    PURGE_RXABORT, PURGE_RXCLEAR, PURGE_TXABORT, PURGE_TXCLEAR, 
+    MS_RLSD_ON, MS_CTS_ON, MS_DSR_ON ,MS_RING_ON, EscapeCommFunction, SetCommTimeouts, 
+    GetCommModemStatus, PurgeComm, SetCommBreak, ClearCommBreak};
 
 use crate::windows::dcb;
 use crate::{
     ClearBuffer, DataBits, Error, ErrorKind, FlowControl, Parity, Result, SerialPort,
     SerialPortBuilder, StopBits,
 };
+
+use super::dcb::MyTrait;
+//https://github.com/microsoft/windows-rs/issues/881
+type DWORD = u32;
+type LPVOID = *mut u8;
 
 /// A serial port implementation for Windows COM ports
 ///

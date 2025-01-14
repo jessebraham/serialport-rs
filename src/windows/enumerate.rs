@@ -1,17 +1,42 @@
 use std::collections::HashSet;
+// use std::ffi::NulError;
 use std::{mem, ptr};
 
-use winapi::ctypes::c_void;
-use winapi::shared::guiddef::*;
-use winapi::shared::minwindef::*;
-use winapi::shared::winerror::*;
-use winapi::um::cfgmgr32::*;
-use winapi::um::cguid::GUID_NULL;
-use winapi::um::setupapi::*;
-use winapi::um::winnt::{KEY_READ, REG_SZ};
-use winapi::um::winreg::*;
+// use winapi::ctypes::c_void;
+// use winapi::shared::guiddef::*;
+// use winapi::shared::minwindef::*;
+// use winapi::shared::winerror::*;
+// use winapi::um::cfgmgr32::*;
+// use winapi::um::cguid::GUID_NULL;
+// use winapi::um::setupapi::*;
+// use winapi::um::winnt::{KEY_READ, REG_SZ};
+// use winapi::um::winreg::*;
+
+// use std::os::raw::c_void;
+use windows_sys::core::GUID;
+use windows_sys::Win32::Media::KernelStreaming::GUID_NULL;
+use windows_sys::Win32::Devices::DeviceAndDriverInstallation::*;
+use windows_sys::Win32::Foundation::{FALSE, MAX_PATH, INVALID_HANDLE_VALUE, FILETIME};
+use windows_sys::Win32::System::Registry::*;
+//https://github.com/microsoft/windows-rs/issues/881
+type DWORD = u32;
+
+type ULONG = u32;
+//in windows-sys the RegQueryValueExW -> u32
+type HRESULT = u32;
+//https://docs.rs/winapi/latest/winapi/shared/minwindef/type.PBYTE.html
+type PBYTE = *mut u8;
 
 use crate::{Error, ErrorKind, Result, SerialPortInfo, SerialPortType, UsbPortInfo};
+
+//https://docs.rs/winapi/latest/winapi/shared/winerror/fn.FAILED.html
+pub fn FAILED(hr: HRESULT) -> bool {
+    hr < 0
+}
+//https://docs.rs/winapi/latest/winapi/shared/winerror/fn.SUCCEEDED.html
+pub fn SUCCEEDED(hr: HRESULT) -> bool {
+    hr >= 0
+}
 
 /// takes normal Rust `str` and outputs a null terminated UTF-16 encoded string
 fn as_utf16(utf8: &str) -> Vec<u16> {
@@ -194,8 +219,17 @@ impl PortDevices {
     // Creates PortDevices object which represents the set of devices associated with a particular
     // Ports class (given by `guid`).
     pub fn new(guid: &GUID) -> Self {
+
+        //https://github.com/microsoft/windows-rs/issues/3093
+        //in windows-sys 0.52.0
+        let null:isize = 0;
+        
         PortDevices {
-            hdi: unsafe { SetupDiGetClassDevsW(guid, ptr::null(), ptr::null_mut(), DIGCF_PRESENT) },
+            //in windows-sys 0.59.0
+            // hdi: unsafe { SetupDiGetClassDevsW(guid, ptr::null(), ptr::null_mut(), DIGCF_PRESENT) },
+
+            //in windows-sys 0.52.0
+            hdi: unsafe { SetupDiGetClassDevsW(guid, ptr::null(), null, DIGCF_PRESENT) },
             dev_idx: 0,
         }
     }
@@ -248,7 +282,7 @@ impl PortDevice {
     /// Retrieves the device instance id string associated with this device's parent.
     /// This is useful for determining the serial number of a composite USB device.
     fn parent_instance_id(&mut self) -> Option<String> {
-        let mut result_buf = [0u16; MAX_PATH];
+        let mut result_buf = [0u16; MAX_PATH as usize];
         let mut parent_device_instance_id = 0;
 
         let res =
@@ -284,7 +318,7 @@ impl PortDevice {
     ///
     /// Reference: https://learn.microsoft.com/en-us/windows-hardware/drivers/install/device-instance-ids
     fn instance_id(&mut self) -> Option<String> {
-        let mut result_buf = [0u16; MAX_DEVICE_ID_LEN];
+        let mut result_buf = [0u16; MAX_DEVICE_ID_LEN as usize];
         let working_buffer_len = result_buf.len() - 1; // always null terminated
         let mut desired_result_len = 0; // possibly larger than the buffer
         let res = unsafe {
@@ -339,13 +373,17 @@ impl PortDevice {
             )
         };
 
-        if hkey as *mut c_void == winapi::um::handleapi::INVALID_HANDLE_VALUE {
+        //in windows-sys 0.59.0
+        // if hkey as *mut c_void == INVALID_HANDLE_VALUE {
+
+        //in windows-sys 0.52.0
+        if hkey as isize == INVALID_HANDLE_VALUE {
             // failed to open registry key. Return empty string as the failure case
             return String::new();
         }
 
         // https://learn.microsoft.com/en-us/windows/win32/api/winreg/nf-winreg-regqueryvalueexw
-        let mut port_name_buffer = [0u16; MAX_PATH];
+        let mut port_name_buffer = [0u16; MAX_PATH as usize];
         let buffer_byte_len = 2 * port_name_buffer.len() as DWORD;
         let mut byte_len = buffer_byte_len;
         let mut value_type = 0;
@@ -395,7 +433,7 @@ impl PortDevice {
     // doesn't exist.
     fn property(&mut self, property_id: DWORD) -> Option<String> {
         let mut value_type = 0;
-        let mut property_buf = [0u16; MAX_PATH];
+        let mut property_buf = [0u16; MAX_PATH as usize];
 
         let res = unsafe {
             SetupDiGetDeviceRegistryPropertyW(
@@ -433,13 +471,19 @@ fn get_registry_com_ports() -> HashSet<String> {
 
     let reg_key = as_utf16("HARDWARE\\DEVICEMAP\\SERIALCOMM");
     let key_ptr = reg_key.as_ptr();
-    let mut ports_key = std::ptr::null_mut();
+
+    //https://github.com/microsoft/windows-rs/issues/3093
+    //in windows-sys 0.59.0
+    // let mut ports_key = std::ptr::null_mut();
+
+    //in windows-sys 0.52.0
+    let mut ports_key:isize = 0;
 
     // SAFETY: ffi, all inputs are correct
     let open_res =
         unsafe { RegOpenKeyExW(HKEY_LOCAL_MACHINE, key_ptr, 0, KEY_READ, &mut ports_key) };
     if SUCCEEDED(open_res) {
-        let mut class_name_buff = [0u16; MAX_PATH];
+        let mut class_name_buff = [0u16; MAX_PATH as usize];
         let mut class_name_size = MAX_PATH as u32;
         let mut sub_key_count = 0;
         let mut largest_sub_key = 0;
@@ -471,10 +515,10 @@ fn get_registry_com_ports() -> HashSet<String> {
         };
         if SUCCEEDED(query_res) {
             for idx in 0..num_key_values {
-                let mut val_name_buff = [0u16; MAX_PATH];
+                let mut val_name_buff = [0u16; MAX_PATH as usize];
                 let mut val_name_size = MAX_PATH as u32;
                 let mut value_type = 0;
-                let mut val_data = [0u16; MAX_PATH];
+                let mut val_data = [0u16; MAX_PATH as usize];
                 let buffer_byte_len = 2 * val_data.len() as DWORD; // len doubled
                 let mut byte_len = buffer_byte_len;
 
