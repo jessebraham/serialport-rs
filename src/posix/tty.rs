@@ -709,6 +709,13 @@ impl SerialPort for TTYPort {
         Ok(())
     }
 
+    fn set_buffer_size(&mut self, _rx: usize, _tx: usize) -> Result<()> {
+        Err(Error::new(
+            ErrorKind::Unsupported,
+            "Configurable buffer sizes are not supported on this platform",
+        ))
+    }
+
     fn write_request_to_send(&mut self, level: bool) -> Result<()> {
         self.set_pin(SerialLines::REQUEST_TO_SEND, level)
     }

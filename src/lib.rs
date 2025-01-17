@@ -527,6 +527,9 @@ pub trait SerialPort: Send + io::Read + io::Write {
     /// </div>
     fn set_timeout(&mut self, timeout: Duration) -> Result<()>;
 
+    /// Set the buffer size
+    fn set_buffer_size(&mut self, receive_size: usize, transmit_size: usize) -> Result<()>;
+
     // Functions for setting non-data control signal pins
 
     /// Sets the state of the RTS (Request To Send) control signal.
@@ -713,6 +716,10 @@ impl<T: SerialPort> SerialPort for &mut T {
 
     fn set_timeout(&mut self, timeout: Duration) -> Result<()> {
         (**self).set_timeout(timeout)
+    }
+
+    fn set_buffer_size(&mut self, receive_size: usize, transmit_size: usize) -> Result<()> {
+        (**self).set_buffer_size(receive_size, transmit_size)
     }
 
     fn write_request_to_send(&mut self, level: bool) -> Result<()> {

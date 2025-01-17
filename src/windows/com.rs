@@ -282,6 +282,13 @@ impl SerialPort for COMPort {
         Ok(())
     }
 
+    fn set_buffer_size(&mut self, receive_size: usize, transmit_size: usize) -> Result<()> {
+        match unsafe { SetupComm(self.handle, receive_size as DWORD, transmit_size as DWORD) } {
+            0 => Err(super::error::last_os_error()),
+            _ => Ok(()),
+        }
+    }
+
     fn write_request_to_send(&mut self, level: bool) -> Result<()> {
         if level {
             self.escape_comm_function(SETRTS)
