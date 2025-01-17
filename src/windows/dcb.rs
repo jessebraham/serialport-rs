@@ -81,6 +81,8 @@ pub(crate) fn set_parity(dcb: &mut DCB, parity: Parity) {
         Parity::None => NOPARITY,
         Parity::Odd => ODDPARITY,
         Parity::Even => EVENPARITY,
+        Parity::Mark => MARKPARITY,
+        Parity::Space => SPACEPARITY,
     };
 
     dcb.set_fParity(if parity == Parity::None { FALSE } else { TRUE } as DWORD);
